@@ -10,10 +10,18 @@ CP=/usr/bin/cp
 MKDIR=/usr/bin/mkdir -p
 ISO=/usr/bin/genisoimage
 VM=/usr/bin/qemu-system-i386
+
 AS=/usr/bin/nasm
 LD=/usr/bin/ld
+CC=/usr/bin/gcc
 
-OBJECTS=$(SRCDIR)/loader.o
+ASFLAGS=-f elf
+LDFLAGS=-T $(SRCDIR)/link.ld -melf_i386
+CCFLAGS=-m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
+        -fno-asynchronous-unwind-tables -nostartfiles -nodefaultlibs \
+        -Wall -Wextra -Werror
+
+OBJECTS=$(SRCDIR)/loader.o $(SRCDIR)/function.o
 ISOFLAGS=-R                           \
          -b boot/grub/stage2_eltorito \
          -no-emul-boot                \
@@ -22,15 +30,18 @@ ISOFLAGS=-R                           \
          -input-charset utf8          \
          -quiet                       \
          -boot-info-table             \
-         -o $(BINDIR)/$(EXEC).iso $(ISODIR) 
+         -o $(BINDIR)/$(EXEC).iso $(ISODIR)
 
 all: $(EXEC)
 
 $(EXEC): $(OBJECTS)
-	$(LD) -T $(SRCDIR)/link.ld -melf_i386 $(OBJECTS) -o $(BINDIR)/$(KERNEL).elf
+	$(LD) $(LDFLAGS) $(OBJECTS) -o $(BINDIR)/$(KERNEL).elf
+
+%.o: %.c
+	$(CC) $(CCFLAGS) $< -o $@
 
 %.o: %.s
-	$(AS) -f elf32 $< -o $@
+	$(AS) $(ASFLAGS) $< -o $@
 
 iso: $(EXEC)
 	$(CP) $(BINDIR)/$(KERNEL).elf $(ISODIR)/boot
