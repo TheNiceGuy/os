@@ -21,7 +21,7 @@ CCFLAGS=-m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
         -fno-asynchronous-unwind-tables -nostartfiles -nodefaultlibs \
         -Wall -Wextra -Werror
 
-OBJECTS=$(SRCDIR)/loader.o $(SRCDIR)/function.o
+OBJECTS=$(SRCDIR)/loader.o $(SRCDIR)/framebuffer.o $(SRCDIR)/function.o
 ISOFLAGS=-R                           \
          -b boot/grub/stage2_eltorito \
          -no-emul-boot                \
