@@ -1,5 +1,7 @@
 global outb
 
+section .text
+align 4
 ; outb - sent a byte to an I/O port
 ;
 ; stack: [esp+8] [ byte] the data byte
