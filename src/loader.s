@@ -2,6 +2,7 @@ global loader                       ; the entry symbol for ELF
 
 extern sum_of_three
 extern clear
+extern move_cursor
 
 MAGIC_NUMBER equ 0x1BADB002         ; define the magic number constant
 FLAGS        equ 0x0                ; multiboot flags
@@ -25,7 +26,10 @@ loader:                             ; this is the entry point in the linker scri
                                     ; setup the stack pointer
     mov dword esp, kernel_stack+KERNEL_STACK_SIZE
 
+    mov dword eax, 0x3
+
     call clear
+    call move_cursor
 
     push dword 3
     push dword 3
