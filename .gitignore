@@ -1,0 +1,4 @@
+bin/
+iso/boot/kernel.elf
+*.o
+*.swp
