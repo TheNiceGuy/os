@@ -47,17 +47,17 @@ fb_move_cursor:
     mov ebx, [ebp+8]                ; move the x position in ebx
     mov eax, [ebp+4]                ; move the y position in eax 
 
-    cmp ebx, FB_WIDTH
-    jge fb_move_cursor_w_err
+    cmp ebx, FB_WIDTH               ; if x position >= FB_WIDTH
+    jge fb_move_cursor_w_err        ; then, exit with an error code
 
-    cmp ebx, 0x0
-    jl fb_move_cursor_w_err
+    cmp ebx, 0x0                    ; if x position < 0
+    jl fb_move_cursor_w_err         ; then, exit with an error code
 
-    cmp eax, FB_HEIGHT
-    jge fb_move_cursor_h_err
+    cmp eax, FB_HEIGHT              ; if y position >= FB_HEIGHT
+    jge fb_move_cursor_h_err        ; then, exit with an error code
     
-    cmp eax, 0x0
-    jl fb_move_cursor_h_err
+    cmp eax, 0x0                    ; if y position < 0
+    jl fb_move_cursor_h_err         ; then, exit with an error code
 
     ; calculate the position in the framebuffer
     mov edx, FB_WIDTH               ; put FB_WIDTH into edx
