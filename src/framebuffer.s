@@ -30,11 +30,12 @@ fb_clear_end:
 
 ; fb_move_cursor - specify the position of the cursor in the framebuffer
 ;
-; stack: [ebp+8] y position
-;        [ebp+4] x position
-;        [ebp  ] return addres
-;        [ebp-4] first byte to send
-;        [ebp-8] second byte to send
+; stack: [ebp+12] y position
+;        [ebp+ 8] x position
+;        [ebp+ 4] old ebp
+;        [ebp   ] return addres
+;        [ebp- 4] first byte to send
+;        [ebp- 8] second byte to send
 ;
 ; return: [0] no error
 ;         [1] wrong width
@@ -47,8 +48,8 @@ fb_move_cursor:
     mov ebp, esp                    ; make ebp point to esp
     sub esp, 8                      ; allocate storage for variables
 
-    mov ebx, [ebp+4]                ; move the x position in ebx
-    mov eax, [ebp+8]                ; move the y position in eax 
+    mov ebx, [ebp+12]               ; move the x position in ebx
+    mov eax, [ebp+ 8]               ; move the y position in eax
 
     cmp ebx, FB_WIDTH               ; if x position >= FB_WIDTH
     jge fb_move_cursor_w_err        ; then, exit with an error code
