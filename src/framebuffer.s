@@ -8,6 +8,8 @@ FB_HEIGHT  equ 25
 FB_IO_CALL equ 0x03D4
 FB_IO_BYTE equ 0x03D5
 
+section .text
+align 4
 ; fb_clear - clear the framebuffer
 ;
 ; stack: [esp] the return address
@@ -26,10 +28,10 @@ fb_clear_loop:
 fb_clear_end:
     ret                             ; return to the caller
 
-; move_cursor - specify the position of the cursor in the framebuffer
+; fb_move_cursor - specify the position of the cursor in the framebuffer
 ;
-; stack: [ebp+8] x position
-;        [ebp+4] y position
+; stack: [ebp+8] y position
+;        [ebp+4] x position
 ;        [ebp  ] return addres
 ;        [ebp-4] first byte to send
 ;        [ebp-8] second byte to send
@@ -41,11 +43,12 @@ fb_clear_end:
 ; note: the x position must be in [0, 80[
 ;       the y position must be in [0, 25[
 fb_move_cursor:
-    mov ebp, esp                    ; save the the base pointer
+    push ebp                        ; save the old base pointer
+    mov ebp, esp                    ; make ebp point to esp
     sub esp, 8                      ; allocate storage for variables
 
-    mov ebx, [ebp+8]                ; move the x position in ebx
-    mov eax, [ebp+4]                ; move the y position in eax 
+    mov ebx, [ebp+4]                ; move the x position in ebx
+    mov eax, [ebp+8]                ; move the y position in eax 
 
     cmp ebx, FB_WIDTH               ; if x position >= FB_WIDTH
     jge fb_move_cursor_w_err        ; then, exit with an error code
@@ -100,4 +103,5 @@ fb_move_cursor_h_err:
 
 fb_move_cursor_end:
     mov esp, ebp                    ; restore the stack pointer
+    pop ebp                         ; restore ebp
     ret                             ; return to the caller
