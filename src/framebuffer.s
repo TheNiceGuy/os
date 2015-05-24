@@ -49,8 +49,8 @@ fb_clear:
 ; note: the x position must be in [0, 80[
 ;       the y position must be in [0, 25[
 fb_move_cursor_coor:
-    mov ebx, [esp+8]                ; move the x position in ebx
-    mov eax, [esp+4]                ; move the y position in eax
+    mov ebx, [esp+4]                ; move the y position in ebx
+    mov eax, [esp+8]                ; move the x position in eax
 
     cmp ebx, FB_WIDTH               ; if x position >= FB_WIDTH
     jge .end_x_err                  ; then, exit with an error code
@@ -69,7 +69,9 @@ fb_move_cursor_coor:
     mul edx                         ; multiply the height by edx
     add eax, ebx                    ; add the width to the height
 
-    call fb_move_cursor_pos         ; eax already contains the position
+    push eax                        ; push the argument
+    call fb_move_cursor_pos         ; change the position
+    add esp, 4                      ; remove the argument
 
     mov eax, 0x0                    ; error code if everything went well
     jmp .end                        ; exit the function
@@ -88,19 +90,22 @@ fb_move_cursor_coor:
 ; fb_move_cursor_pos - specify the position of the cursor in the
 ;                      framebuffer
 ;
-; register: [eax] position of the cursor
-;
-; stack: [esp+4] old ebp
-;        [esp  ] return address
-;        [esp-4] first byte to send
-;        [esp-8] second byte to send
+; stack: [ebp+8] position of the cursor
+;        [ebp+4] old ebp
+;        [ebp  ] return address
+;        [ebp-4] first byte to send
+;        [ebp-8] second byte to send
 ;
 ; return: [0] no error
 ;         [1] wrong position
 ;
 ; note: the position must be in [0, 2000[
 fb_move_cursor_pos:
+    push ebp                        ; push the old ebp
+    mov ebp, esp                    ; make ebp point to esp
     sub esp, 8                      ; allocate storage for variables
+
+    mov eax, [ebp+8]                ; move the position into eax
 
     cmp eax, FB_SIZE                ; if the position >= FB_SIZE
     jge .end_err                    ; then, exit with an error code
@@ -111,9 +116,9 @@ fb_move_cursor_pos:
     mov [cursor], eax               ; change the cursor's position
 
     ; split the position in the framebuffer into 2 bytes
-    mov [esp-4], eax                ; store the first byte into [ebp-4]
+    mov [ebp-4], eax                ; store the first byte into [ebp-4]
     shr eax, 8                      ; shift the second byte into the first
-    mov [esp-8], eax                ; store the second byte into [ebp-8]
+    mov [ebp-8], eax                ; store the second byte into [ebp-8]
 
     ; send the first byte to the framebuffer
     mov dx, FB_IO_CALL              ; address of the I/O port for calls
@@ -121,7 +126,7 @@ fb_move_cursor_pos:
     out dx, al                      ; send the call to the I/O port
 
     mov dx, FB_IO_BYTE              ; address of the I/O port for bytes
-    mov al, [esp-8]                 ; the first byte
+    mov al, [ebp-8]                 ; the first byte
     out dx, al                      ; send the byte to the I/O port
 
     ; send the second byte to the framebuffer
@@ -130,7 +135,7 @@ fb_move_cursor_pos:
     out dx, al
 
     mov dx, FB_IO_BYTE              ; address of the I/O port for bytes
-    mov al, [esp-4]                 ; the second byte
+    mov al, [ebp-4]                 ; the second byte
     out dx, al                      ; send the byte to the I/O port
 
     mov eax, 0x0                    ; error code if everything went well
@@ -140,5 +145,10 @@ fb_move_cursor_pos:
     mov eax, 0x1                    ; error code if the position is wrong
 
 .end:
-    add esp, 8                      ; remove allocated variables
+    mov esp, ebp                    ; restore esp
+    pop ebp                         ; restore ebp
     ret                             ; return to the caller
+
+; fb_write_buffer - write a buffer of text into the framebuffer
+;
+; stack:

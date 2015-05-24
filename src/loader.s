@@ -27,10 +27,10 @@ loader:                             ; this is the entry point in the linker scri
                                     ; setup the stack pointer
     mov dword esp, kernel_stack+KERNEL_STACK_SIZE
 
-    mov eax, 0x0
-    call fb_move_cursor_pos
-    call fb_clear
-;    call kmain
+    push 0
+    call fb_move_cursor_pos         ; initialise the cursor at the position 0
+    call fb_clear                   ; clear the framebuffer
+    call kmain
 
 .loop:
     jmp .loop                       ; loop forever

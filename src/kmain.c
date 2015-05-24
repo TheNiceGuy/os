@@ -3,5 +3,5 @@
 
 void kmain() {
     fb_clear();
-    fb_move_cursor(0x0,0x0);
+    fb_move_cursor_coor(79, 24);
 }
