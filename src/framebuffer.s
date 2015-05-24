@@ -1,6 +1,7 @@
 global fb_clear
 global fb_move_cursor_coor
 global fb_move_cursor_pos
+global fb_write
 
 FB_START   equ 0x000B8000
 FB_END     equ 0x000B8FA0
@@ -21,15 +22,17 @@ align 4
 ;
 ; stack: [esp] the return address
 ;
+; register used: [ecx]
+;
 ; return: nothing
 fb_clear:
-    mov eax, FB_START               ; set eax to the start of the fb
+    mov ecx, FB_START               ; set eax to the start of the fb
 
 .loop:
-    cmp eax, FB_END                 ; check if the eax is at the end of the fb
+    cmp ecx, FB_END                 ; check if the eax is at the end of the fb
     je .end                         ; if it is, jump to the end of the loop
-    mov word [eax], 0x0F20          ; else, move a black space into the char
-    add eax, 0x2                    ; increase eax for the next char
+    mov word [ecx], 0x0F20          ; else, move a black space into the char
+    add ecx, 0x2                    ; increase eax for the next char
     jmp .loop                       ; return at the start of the loop
 
 .end:
@@ -41,6 +44,8 @@ fb_clear:
 ; stack: [ebp+8] y position
 ;        [ebp+4] x position
 ;        [ebp  ] return address
+;
+; register used: [eax] [ebx] [edx]
 ;
 ; return: [0] no error
 ;         [1] wrong width
@@ -96,6 +101,8 @@ fb_move_cursor_coor:
 ;        [ebp-4] first byte to send
 ;        [ebp-8] second byte to send
 ;
+; register used: [eax] [al] [dx]
+;
 ; return: [0] no error
 ;         [1] wrong position
 ;
@@ -149,6 +156,63 @@ fb_move_cursor_pos:
     pop ebp                         ; restore ebp
     ret                             ; return to the caller
 
-; fb_write_buffer - write a buffer of text into the framebuffer
+; fb_write - write a null-terminated string into the framebuffer
 ;
-; stack:
+; stack: [ebp+8] pointer to a null-terminated string
+;        [ebp+4] old ebp
+;        [ebp  ] return address
+;
+; register used: [eax] [ebx] [ecx] [edx]
+;
+; return
+fb_write:
+    push ebp                        ; push the old ebp
+    mov ebp, esp                    ; make ebp point to esp
+
+    mov eax, [cursor]               ; move the cursor's offset into eax
+    mov ebx, FB_START               ; move the fb pointer into eax
+    mov ecx, [ebp+8]                ; move the string pointer into ecx
+    mov edx, 2                      ; move 2 into edx
+    mul edx                         ; multiply eax by edx [2]
+    add eax, ebx                    ; add the fb pointer into eax
+
+.loop:
+    mov dx, [ecx]                   ; move a word of the string into dx
+
+    cmp dl, 00                      ; if the lower byte is a null char
+    je .end                         ; then, exit the function since we
+                                    ; are at the end of the string
+
+    cmp dh, 00                      ; if the higher byte is null char
+    je .print_byte                  ; then, it means there is a char in
+                                    ; the lower byte that needs to be
+                                    ; printed
+.print_word:
+    shl edx, 8                      ; shift to the left by to byte
+    xchg dh, dl                     ; swap the lower/higher byte
+    and edx, 0x00FF00FF             ; prepare the register for the color
+    or edx, 0x0F000F00              ; add color into the register
+    mov dword [eax], edx            ; print the two characters
+
+    add word [cursor], 2            ; increase the cursor by 2
+    add eax, 4                      ; increase the fb's offet by 4
+    add ecx, 2                      ; increase the string's offset by 2
+    jmp .loop                       ; return at the start of the loop
+
+.print_byte:
+    and edx, 0x00FF                 ; prepare the register for the color
+    or edx, 0x0F00                  ; add color into the register
+    mov word [eax], dx              ; print the character
+
+    add word [cursor], 1            ; increase the cursor by 1
+    add eax, 2                      ; increase the fb's offset by 2
+    add ecx, 1                      ; increase the string's offset by 1
+
+.end:
+    push dword [cursor]             ; push the new position of the cursor
+    call fb_move_cursor_pos         ; change the cursor's position
+    add esp, 4                      ; remove the argument from the stack
+
+    mov esp, ebp                    ; restore esp
+    pop ebp                         ; restore ebp
+    ret                             ; return to the caller
