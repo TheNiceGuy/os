@@ -37,6 +37,11 @@ fb_clear:
     jmp .loop                       ; return at the start of the loop
 
 .end:
+    ; set the cursor's position at the beginning
+    push 0
+    call fb_move_cursor_pos
+    add esp, 4
+
     ret                             ; return to the caller
 
 ; fb_scroll_up - scroll the framebuffer by one line
@@ -220,8 +225,10 @@ fb_write:
     mov dx, [ecx]                   ; move a word of the string into dx
 
     cmp dl, 00                      ; if the lower byte is a null char
-    je .end                         ; then, exit the function since we
-                                    ; are at the end of the string
+    je .end                         ; then, exit the function
+
+    cmp dl, 10                      ; if the lower byte is a newline
+    je .newline                     ; then, insert a newline
 
 .print_byte:
     and edx, 0x00FF                 ; prepare the register for the color
@@ -232,8 +239,9 @@ fb_write:
     add eax, 2                      ; increase the fb's offset by 2
     add ecx, 1                      ; increase the string's offset by 1
 
+.scroll_up:
     cmp word [cursor], FB_SIZE      ; if the cursor isn't at the end
-    jne .loop                       ; then, we can add another character
+    jl .loop                        ; then, we can add another character
                                     ; else, we need to scroll up
     sub word [cursor], FB_WIDTH     ; we put the cursor at the start of
                                     ; the line a substracting the width
@@ -241,16 +249,32 @@ fb_write:
 
     ; we save all current register before calling fb_scroll_up
     push eax
-    push ebx
     push ecx
     push edx
     call fb_scroll_up
     pop edx
     pop ecx
-    pop ebx
     pop eax
 
     jmp .loop
+
+.newline:
+    mov ax, [cursor]                ; move the cursor's position into ax
+    mov bl, FB_WIDTH                ; move the fb's width into bl
+
+    div bl                          ; devide ax by bl
+    add al, 1                       ; round up
+    and eax, 0x000000FF             ; remove garbage in eax
+    and ebx, 0x000000FF             ; remove garbage in ebx
+    mul ebx                         ; multiply eax by bl
+    mov [cursor], eax               ; set the cursor's position
+
+    mov ebx, 2                      ; move 2 into bl
+    mul ebx                         ; multiply eax by bl
+    add eax, FB_START               ; set the fb's offset
+    add ecx, 1                      ; set the string's offset
+
+    jmp .scroll_up
 
 .end:
     push dword [cursor]             ; push the new position of the cursor

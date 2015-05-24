@@ -30,6 +30,7 @@ loader:                             ; this is the entry point from the
                                     ; setup the stack pointer
     mov dword esp, kernel_stack+KERNEL_STACK_SIZE
 
+    call fb_clear
     call kmain
 
 .loop:
