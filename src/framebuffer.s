@@ -231,6 +231,25 @@ fb_write:
     add word [cursor], 1            ; increase the cursor by 1
     add eax, 2                      ; increase the fb's offset by 2
     add ecx, 1                      ; increase the string's offset by 1
+
+    cmp word [cursor], FB_SIZE      ; if the cursor isn't at the end
+    jne .loop                       ; then, we can add another character
+                                    ; else, we need to scroll up
+    sub word [cursor], FB_WIDTH     ; we put the cursor at the start of
+                                    ; the line a substracting the width
+    sub eax, FB_WIDTH*2             ; we substract to pointer
+
+    ; we save all current register before calling fb_scroll_up
+    push eax
+    push ebx
+    push ecx
+    push edx
+    call fb_scroll_up
+    pop edx
+    pop ecx
+    pop ebx
+    pop eax
+
     jmp .loop
 
 .end:
