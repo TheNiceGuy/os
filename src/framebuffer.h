@@ -27,4 +27,11 @@ int fb_move_cursor_coor(short x, short y);
  */
 int fb_move_cursor_pos(short pos);
 
+/** fb_write:
+ *  Write a null-terminated text buffer into the framebuffer.
+ *
+ *  @param buffer The pointer to the null-terminated buffer
+ */
+void fb_write(char* buffer);
+
 #endif
