@@ -1,6 +1,9 @@
 global loader                       ; the entry symbol for ELF
 
 extern kmain
+extern fb_clear
+extern fb_move_cursor_coor
+extern fb_move_cursor_pos
 
 MAGIC_NUMBER equ 0x1BADB002         ; define the magic number constant
 FLAGS        equ 0x0                ; multiboot flags
@@ -24,7 +27,10 @@ loader:                             ; this is the entry point in the linker scri
                                     ; setup the stack pointer
     mov dword esp, kernel_stack+KERNEL_STACK_SIZE
 
-    call kmain
+    mov eax, 0x0
+    call fb_move_cursor_pos
+    call fb_clear
+;    call kmain
 
 .loop:
     jmp .loop                       ; loop forever
