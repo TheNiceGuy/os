@@ -2,6 +2,7 @@ global loader                       ; the entry symbol for ELF
 
 extern kmain
 extern fb_clear
+extern fb_scroll_up
 extern fb_move_cursor_coor
 extern fb_move_cursor_pos
 extern fb_write
@@ -23,21 +24,13 @@ align 4                             ; the code must be aligned by 4 bytes
     dd MAGIC_NUMBER                 ; write MAGIC_NUMBER
     dd FLAGS                        ; write FLAGS
     dd CHECKSUM                     ; write CHECKSUM
-str:
-    db 'Hello World!',0
 
 loader:                             ; this is the entry point from the
                                     ; linker script
                                     ; setup the stack pointer
     mov dword esp, kernel_stack+KERNEL_STACK_SIZE
 
-    push 0
-    call fb_move_cursor_pos         ; initialise the cursor at the position 0
-    call fb_clear                   ; clear the framebuffer
-
-    push str
-    call fb_write
-;    call kmain
+    call kmain
 
 .loop:
     jmp .loop                       ; loop forever
