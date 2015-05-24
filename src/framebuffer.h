@@ -18,6 +18,11 @@ void fb_clear();
  */
 int fb_move_cursor_coor(short x, short y);
 
+/** fb_scroll_up:
+ *  Scroll the framebuffer by one line.
+ */
+void fb_scroll_up();
+
 /** fb_move_cursor_pos:
  *  Specify the position of the cursor in the framebuffer.
  *

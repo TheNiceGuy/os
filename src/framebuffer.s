@@ -1,4 +1,5 @@
 global fb_clear
+global fb_scroll_up
 global fb_move_cursor_coor
 global fb_move_cursor_pos
 global fb_write
@@ -20,7 +21,7 @@ section .text
 align 4
 ; fb_clear - clear the framebuffer
 ;
-; stack: [esp] the return address
+; stack: [esp] return address
 ;
 ; register used: [ecx]
 ;
@@ -34,6 +35,45 @@ fb_clear:
     mov word [ecx], 0x0F20          ; else, move a black space into the char
     add ecx, 0x2                    ; increase eax for the next char
     jmp .loop                       ; return at the start of the loop
+
+.end:
+    ret                             ; return to the caller
+
+; fb_scroll_up - scroll the framebuffer by one line
+;
+; stack: [esp] return address
+;
+; register used: [eax] [ebx] [ecx] [edx]
+;
+; return: nothing
+fb_scroll_up:
+    mov eax, FB_WIDTH               ; move the width of the fb into eax
+    mov ebx, FB_START               ; move the start of the fb into ebx
+    mov ecx, FB_END                 ; move the end of the fb into ecx
+
+    mov edx, 2
+    mul edx                         ; (FB_WIDTH*2)
+    sub ecx, eax                    ; (FB_END)-(FB_WIDTH*2)
+    add eax, FB_START               ; (FB_START)+(FB_WIDTH*2)
+
+.loop:
+    cmp ebx, ecx                    ; if we are the (last line)-1 of the fb
+    je .loop_fill                   ; then, we need to fill the last line
+
+    mov edx, [eax]                  ; read two chars into edx
+    mov [ebx], edx                  ; put them one line before
+
+    add eax, 4                      ; increase eax by 4
+    add ebx, 4                      ; increase ebx by 4
+    jmp .loop
+
+.loop_fill:
+    cmp ebx, FB_END                 ; if the end of the fb
+    je .end                         ; then, we can exit the function
+
+    mov word [ebx], 0x0F20          ; replace the char by a black space
+    add ebx, 2                      ; increase ebx by 2
+    jmp .loop_fill
 
 .end:
     ret                             ; return to the caller
@@ -164,7 +204,7 @@ fb_move_cursor_pos:
 ;
 ; register used: [eax] [ebx] [ecx] [edx]
 ;
-; return
+; return: nothing
 fb_write:
     push ebp                        ; push the old ebp
     mov ebp, esp                    ; make ebp point to esp
@@ -183,22 +223,6 @@ fb_write:
     je .end                         ; then, exit the function since we
                                     ; are at the end of the string
 
-    cmp dh, 00                      ; if the higher byte is null char
-    je .print_byte                  ; then, it means there is a char in
-                                    ; the lower byte that needs to be
-                                    ; printed
-.print_word:
-    shl edx, 8                      ; shift to the left by to byte
-    xchg dh, dl                     ; swap the lower/higher byte
-    and edx, 0x00FF00FF             ; prepare the register for the color
-    or edx, 0x0F000F00              ; add color into the register
-    mov dword [eax], edx            ; print the two characters
-
-    add word [cursor], 2            ; increase the cursor by 2
-    add eax, 4                      ; increase the fb's offet by 4
-    add ecx, 2                      ; increase the string's offset by 2
-    jmp .loop                       ; return at the start of the loop
-
 .print_byte:
     and edx, 0x00FF                 ; prepare the register for the color
     or edx, 0x0F00                  ; add color into the register
@@ -207,6 +231,7 @@ fb_write:
     add word [cursor], 1            ; increase the cursor by 1
     add eax, 2                      ; increase the fb's offset by 2
     add ecx, 1                      ; increase the string's offset by 1
+    jmp .loop
 
 .end:
     push dword [cursor]             ; push the new position of the cursor
