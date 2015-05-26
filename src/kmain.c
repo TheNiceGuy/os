@@ -70,13 +70,13 @@ void draw(int size) {
     for(i = 0; i < size; i++) {
         sleep();
         if(i == 0)
-            draw_limit(size, false);
-        else if(i == size-1)
             draw_limit(size, true);
+        else if(i == size-1)
+            draw_limit(size, false);
         else if(i < (size-1)/2)
-            draw_middle(size, false);
-        else if(i > (size-1)/2)
             draw_middle(size, true);
+        else if(i > (size-1)/2)
+            draw_middle(size, false);
         else
             draw_middle_line(size);
     }
